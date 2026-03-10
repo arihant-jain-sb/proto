@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Systems — Internal Build Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07090c;
+    --surface: #0c0f14;
+    --border: #141c26;
+    --border2: #1a2535;
+    --text: #c8d8e8;
+    --muted: #3a4f66;
+    --muted2: #253344;
+    --c1: #f4a942;
+    --c2: #22d3c8;
+    --c3: #7cfc6e;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 150px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+  }
+
+  /* Grid background */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 48px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(7,9,12,0.85);
+    backdrop-filter: blur(12px);
+  }
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    color: white;
+  }
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--c3);
+    animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 48px 64px;
+    position: relative;
+    z-index: 1;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-eyebrow {
+    font-size: 9px;
+    letter-spacing: 5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 12vw, 160px);
+    line-height: 0.88;
+    color: white;
+    letter-spacing: -1px;
+    margin-bottom: 32px;
+  }
+  .hero-title em {
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.25);
+    font-size: 0.9em;
+  }
+  .hero-desc {
+    max-width: 520px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.9;
+    border-left: 2px solid var(--border2);
+    padding-left: 20px;
+    margin-bottom: 48px;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+  .hero-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hero-stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: white;
+    letter-spacing: 1px;
+  }
+  .hero-stat-label {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .hero-scroll {
+    position: absolute;
+    bottom: 32px; right: 48px;
+    writing-mode: vertical-rl;
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: var(--muted2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-scroll::after {
+    content: '';
+    width: 1px;
+    height: 60px;
+    background: linear-gradient(to bottom, var(--muted2), transparent);
+    animation: scrollLine 2s ease infinite;
+  }
+  @keyframes scrollLine { 0%{transform:scaleY(0);transform-origin:top} 50%{transform:scaleY(1);transform-origin:top} 51%{transform-origin:bottom} 100%{transform:scaleY(0);transform-origin:bottom} }
+
+  /* ─── PROJECT SECTIONS ─── */
+  .project {
+    position: relative;
+    z-index: 1;
+    border-bottom: 1px solid var(--border);
+    padding: 80px 48px;
+    overflow: hidden;
+  }
+  .project-bg-num {
+    position: absolute;
+    top: -20px; right: -20px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 320px;
+    color: rgba(255,255,255,0.018);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+  .project-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 32px;
+    margin-bottom: 56px;
+  }
+  .project-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    margin-bottom: 14px;
+  }
+  .project-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 5vw, 64px);
+    line-height: 0.95;
+    color: white;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+  .project-tagline {
+    font-size: 13px;
+    color: #8aaccc;
+    line-height: 1.9;
+    max-width: 560px;
+  }
+  .project-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .badge {
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 2px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+
+  /* ─── FLOW DIAGRAM ─── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 48px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .flow::-webkit-scrollbar { height: 2px; }
+  .flow::-webkit-scrollbar-track { background: var(--surface); }
+  .flow::-webkit-scrollbar-thumb { background: var(--border2); }
+  .flow-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .flow-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 12px 16px;
+    text-align: center;
+    min-width: 110px;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .flow-box:hover {
+    border-color: currentColor;
+    transform: translateY(-2px);
+  }
+  .flow-box-icon { font-size: 18px; margin-bottom: 4px; }
+  .flow-box-label { font-size: 9px; letter-spacing: 1px; color: var(--text); }
+  .flow-box-sub { font-size: 8px; color: var(--muted); margin-top: 2px; }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    color: var(--muted2);
+    flex-shrink: 0;
+  }
+  .flow-arrow svg { width: 28px; }
+
+  /* ─── CONTENT GRID ─── */
+  .project-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .project-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .card-label {
+    font-size: 8px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .card-body { font-size: 11px; color: #7a92aa; line-height: 1.9; }
+
+  /* ─── WOW MOMENT ─── */
+  .wow-block {
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .wow-block::before {
+    content: '⚡';
+    position: absolute;
+    right: 24px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 64px;
+    opacity: 0.06;
+  }
+  .wow-label {
+    font-size: 8px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .wow-text {
+    font-size: 15px;
+    line-height: 1.7;
+    max-width: 700px;
+  }
+
+  /* ─── TECH STACK ─── */
+  .tech-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+  .tech-pill {
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .tech-pill:hover {
+    border-color: currentColor;
+    transform: translateY(-1px);
+  }
+
+  /* ─── TIMELINE ─── */
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .timeline-item {
+    background: var(--surface);
+    padding: 16px 18px;
+  }
+  .timeline-phase {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .timeline-task {
+    font-size: 10px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* ─── PROJECT COLORS ─── */
+  .p1 .project-num { color: var(--c1); }
+  .p1 .flow-box { color: var(--c1); }
+  .p1 .wow-block { background: rgba(244,169,66,0.06); border: 1px solid rgba(244,169,66,0.15); }
+  .p1 .wow-label { color: var(--c1); }
+  .p1 .wow-text { color: rgba(244,169,66,0.85); }
+  .p1 .tech-pill:hover { color: var(--c1); border-color: var(--c1); }
+  .p1 .badge-main { color: var(--c1); border-color: rgba(244,169,66,0.3); background: rgba(244,169,66,0.06); }
+  .p1 .project-bg-num { color: rgba(244,169,66,0.025); }
+
+  .p2 .project-num { color: var(--c2); }
+  .p2 .flow-box { color: var(--c2); }
+  .p2 .wow-block { background: rgba(34,211,200,0.05); border: 1px solid rgba(34,211,200,0.15); }
+  .p2 .wow-label { color: var(--c2); }
+  .p2 .wow-text { color: rgba(34,211,200,0.85); }
+  .p2 .tech-pill:hover { color: var(--c2); border-color: var(--c2); }
+  .p2 .badge-main { color: var(--c2); border-color: rgba(34,211,200,0.3); background: rgba(34,211,200,0.06); }
+  .p2 .project-bg-num { color: rgba(34,211,200,0.02); }
+
+  .p3 .project-num { color: var(--c3); }
+  .p3 .flow-box { color: var(--c3); }
+  .p3 .wow-block { background: rgba(124,252,110,0.05); border: 1px solid rgba(124,252,110,0.15); }
+  .p3 .wow-label { color: var(--c3); }
+  .p3 .wow-text { color: rgba(124,252,110,0.85); }
+  .p3 .tech-pill:hover { color: var(--c3); border-color: var(--c3); }
+  .p3 .badge-main { color: var(--c3); border-color: rgba(124,252,110,0.3); background: rgba(124,252,110,0.06); }
+  .p3 .project-bg-num { color: rgba(124,252,110,0.02); }
+
+  /* ─── DIVIDER ─── */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 0 48px;
+    position: relative;
+    z-index: 1;
+  }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+  .section-divider-label { font-size: 8px; letter-spacing: 4px; color: var(--muted2); white-space: nowrap; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 80px 48px 48px;
+    border-top: 1px solid var(--border);
+  }
+  .footer-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(40px, 6vw, 80px);
+    color: white;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .footer-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 48px;
+    max-width: 400px;
+    line-height: 1.8;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 48px;
+  }
+  .footer-item {
+    background: var(--surface);
+    padding: 24px;
+  }
+  .footer-item-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    margin-bottom: 4px;
+  }
+  .footer-item-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .footer-item-desc { font-size: 10px; color: #3a4f66; line-height: 1.7; }
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .footer-copy { font-size: 9px; color: var(--muted2); letter-spacing: 2px; }
+
+  /* ─── REVEAL ANIMATIONS ─── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ─── TERMINAL BLOCK ─── */
+  .terminal {
+    background: #020408;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .terminal-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .terminal-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .terminal-title { font-size: 9px; color: var(--muted); margin-left: 8px; letter-spacing: 2px; }
+  .terminal-body { padding: 16px 20px; }
+  .terminal-line { font-size: 10px; line-height: 2; }
+  .terminal-prompt { color: var(--c3); }
+  .terminal-cmd { color: #7dd3fc; }
+  .terminal-comment { color: var(--muted); }
+  .terminal-output { color: var(--text); }
+  .terminal-success { color: var(--c3); }
+  .terminal-warn { color: var(--c1); }
+
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    .nav-links { display: none; }
+    .hero, .project, footer { padding-left: 20px; padding-right: 20px; }
+    .hero-title { font-size: 64px; }
+    .project-grid, .project-grid-3 { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .project-header { grid-template-columns: 1fr; }
+    .project-badge { align-items: flex-start; }
+    .section-divider { padding: 0 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">SQBT · AI</div>
+  <ul class="nav-links">
+    <li><a href="#p1">01 Portal</a></li>
+    <li><a href="#p2">02 Code Server</a></li>
+    <li><a href="#p3">03 MVP Builder</a></li>
+  </ul>
+  <div class="nav-status">
+    <div class="nav-dot"></div>
+    INTERNAL BUILD ROADMAP
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow reveal">Internal AI Systems — Build Roadmap 2025–26</div>
+  <h1 class="hero-title reveal reveal-delay-1">
+    3 AI<br>Systems<br><em>Worth</em><br>Building
+  </h1>
+  <div class="hero-scroll">SCROLL</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ PROJECT 01 -->
+<div class="section-divider"><div class="section-divider-line"></div><div class="section-divider-label">PROJECT ONE</div><div class="section-divider-line"></div></div>
+<section class="project p1" id="p1">
+  <div class="project-bg-num">01</div>
+
+  <div class="project-header reveal">
+    <div>
+      <div class="project-num">01 / CLIENT INTELLIGENCE</div>
+      <h2 class="project-name">Client Project<br>Intelligence Portal</h2>
+      <p class="project-tagline">Instead of weekly status emails that nobody reads — clients get a private AI-written digest of exactly what shipped, what's next, and what's at risk.</p>
+    </div>
+    <div class="project-badge">
+      <div class="badge badge-main">💰 Retains Clients</div>
+    </div>
+  </div>
+
+  <!-- Flow diagram -->
+  <div class="flow reveal reveal-delay-1">
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🗂</div>
+        <div class="flow-box-label">JIRA / LINEAR</div>
+        <div class="flow-box-sub">Sprint tickets</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🐙</div>
+        <div class="flow-box-label">GITHUB</div>
+        <div class="flow-box-sub">Commits + PRs</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🧠</div>
+        <div class="flow-box-label">LLM ENGINE</div>
+        <div class="flow-box-sub">Analyze + write</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">📊</div>
+        <div class="flow-box-label">DIGEST</div>
+        <div class="flow-box-sub">AI-written summary</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🔐</div>
+        <div class="flow-box-label">CLIENT PORTAL</div>
+        <div class="flow-box-sub">Private login</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wow moment -->
+  <div class="wow-block reveal reveal-delay-2">
+    <div class="wow-label">⚡ The wow moment</div>
+    <div class="wow-text">"Client logs in on Monday morning and sees a crisp AI-written update — what shipped last week, what's in progress, any risks. Zero emails sent. Zero PM hours spent. No other agency does this."</div>
+  </div>
+
+  <!-- Two col cards -->
+  <div class="project-grid reveal reveal-delay-3">
+    <div class="card">
+      <div class="card-label">What it actually does</div>
+      <div class="card-body">
+        Every week, a cron job pulls Jira tickets (Done / In Progress / Blocked) and GitHub commits. The LLM reads this data and writes a clean, human-friendly summary in three sections: <strong style="color:var(--c1)">Shipped</strong>, <strong style="color:var(--c1)">Next</strong>, and <strong style="color:var(--c1)">Watch Out</strong>. Client sees it in a private portal. No PM intervention needed.
+      </div>
+    </div>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot" style="background:#ff5f57"></div>
+        <div class="terminal-dot" style="background:#febc2e"></div>
+        <div class="terminal-dot" style="background:#28c840"></div>
+        <div class="terminal-title">WEEKLY DIGEST — AUTO-GENERATED</div>
+      </div>
+      <div class="terminal-body">
+        <div class="terminal-line"><span class="terminal-prompt">✓ SHIPPED</span></div>
+        <div class="terminal-line"><span class="terminal-output">  → User auth flow (JWT + refresh tokens)</span></div>
+        <div class="terminal-line"><span class="terminal-output">  → Dashboard layout v2 merged</span></div>
+        <div class="terminal-line"><span class="terminal-output">  → Payment webhook integration</span></div>
+        <div class="terminal-line">&nbsp;</div>
+        <div class="terminal-line"><span class="terminal-warn">→ IN PROGRESS</span></div>
+        <div class="terminal-line"><span class="terminal-output">  → Notification system (65% done)</span></div>
+        <div class="terminal-line"><span class="terminal-output">  → Mobile responsive pass</span></div>
+        <div class="terminal-line">&nbsp;</div>
+        <div class="terminal-line"><span style="color:#ef4444">⚠ RISK</span></div>
+        <div class="terminal-line"><span class="terminal-output">  → 3rd party API rate limits may</span></div>
+        <div class="terminal-line"><span class="terminal-output">    delay search feature by 2 days</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tech stack -->
+  <div class="reveal">
+    <div class="card-label" style="margin-bottom:10px">Tech Stack</div>
+    <div class="tech-grid">
+      <span class="tech-pill">Next.js 14</span>
+      <span class="tech-pill">Jira REST API</span>
+      <span class="tech-pill">GitHub API</span>
+      <span class="tech-pill">Claude / GPT-4o</span>
+      <span class="tech-pill">Cron Jobs (Vercel)</span>
+      <span class="tech-pill">PostgreSQL</span>
+      <span class="tech-pill">NextAuth (client login)</span>
+      <span class="tech-pill">Resend (email alerts)</span>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+</section>
+
+<!-- ═══════════════════════════════════════════ PROJECT 02 -->
+<div class="section-divider"><div class="section-divider-line"></div><div class="section-divider-label">PROJECT TWO</div><div class="section-divider-line"></div></div>
+<section class="project p2" id="p2">
+  <div class="project-bg-num">02</div>
+
+  <div class="project-header reveal">
+    <div>
+      <div class="project-num">02 / AUTONOMOUS CODING</div>
+      <h2 class="project-name">Multi-Repo<br>AI Coding Server</h2>
+      <p class="project-tagline">A central AI coding server that routes task requests from Telegram or WhatsApp to the right repo, spins up a Docker environment, writes the code, and opens a PR. Automatically.</p>
+    </div>
+    <div class="project-badge">
+      <div class="badge badge-main">🚀 Flagship</div>
+    </div>
+  </div>
+
+  <!-- Flow diagram -->
+  <div class="flow reveal reveal-delay-1">
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">💬</div>
+        <div class="flow-box-label">TELEGRAM</div>
+        <div class="flow-box-sub">User request</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🧠</div>
+        <div class="flow-box-label">ROUTER LLM</div>
+        <div class="flow-box-sub">Which repo?</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🐳</div>
+        <div class="flow-box-label">DOCKER</div>
+        <div class="flow-box-sub">Isolated env</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🤖</div>
+        <div class="flow-box-label">CLI AGENT</div>
+        <div class="flow-box-sub">Writes code</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🌿</div>
+        <div class="flow-box-label">GITHUB PR</div>
+        <div class="flow-box-sub">Branch + review</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wow moment -->
+  <div class="wow-block reveal reveal-delay-2">
+    <div class="wow-label">⚡ The wow moment</div>
+    <div class="wow-text">"Developer sends 'Add login validation to the dashboard' on Telegram at 11pm. They wake up to a GitHub PR with the implementation, ready for review. The AI worked through the night."</div>
+  </div>
+
+  <div class="project-grid reveal reveal-delay-3">
+    <div class="card">
+      <div class="card-label">System Architecture</div>
+      <div class="card-body">
+        A central orchestration server receives messages from Telegram/WhatsApp. A routing LLM classifies the task and identifies which of your registered repositories it belongs to. The server spins up a fresh Docker container, clones the repo, injects context about the codebase, runs a CLI coding agent (Claude Code / Aider), and on completion creates a branch and pushes a PR with a description.
+      </div>
+    </div>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot" style="background:#ff5f57"></div>
+        <div class="terminal-dot" style="background:#febc2e"></div>
+        <div class="terminal-dot" style="background:#28c840"></div>
+        <div class="terminal-title">ORCHESTRATOR LOG</div>
+      </div>
+      <div class="terminal-body">
+        <div class="terminal-line"><span class="terminal-comment"># Incoming task via Telegram</span></div>
+        <div class="terminal-line"><span class="terminal-prompt">→</span> <span class="terminal-cmd">"Add email validation to signup form"</span></div>
+        <div class="terminal-line">&nbsp;</div>
+        <div class="terminal-line"><span class="terminal-comment"># Router identifies repo</span></div>
+        <div class="terminal-line"><span class="terminal-output">  Matched: client-portal-frontend</span></div>
+        <div class="terminal-line"><span class="terminal-output">  Confidence: 0.94</span></div>
+        <div class="terminal-line">&nbsp;</div>
+        <div class="terminal-line"><span class="terminal-comment"># Spinning up environment</span></div>
+        <div class="terminal-line"><span class="terminal-output">  Container: task-7f3a2b ✓</span></div>
+        <div class="terminal-line"><span class="terminal-output">  Repo cloned ✓  Dependencies ✓</span></div>
+        <div class="terminal-line">&nbsp;</div>
+        <div class="terminal-line"><span class="terminal-comment"># Agent running...</span></div>
+        <div class="terminal-line"><span class="terminal-success">✓ PR #47 opened → feat/email-validation</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reveal">
+    <div class="card-label" style="margin-bottom:10px">Tech Stack</div>
+    <div class="tech-grid">
+      <span class="tech-pill">Node.js / Python Server</span>
+      <span class="tech-pill">Telegram Bot API</span>
+      <span class="tech-pill">Claude API (router)</span>
+      <span class="tech-pill">Docker SDK</span>
+      <span class="tech-pill">Claude Code CLI / Aider</span>
+      <span class="tech-pill">GitHub API</span>
+      <span class="tech-pill">Redis (task queue)</span>
+      <span class="tech-pill">WebSockets (live status)</span>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════ PROJECT 03 -->
+<div class="section-divider"><div class="section-divider-line"></div><div class="section-divider-label">PROJECT THREE</div><div class="section-divider-line"></div></div>
+<section class="project p3" id="p3">
+  <div class="project-bg-num">03</div>
+
+  <div class="project-header reveal">
+    <div>
+      <div class="project-num">03 / LIVE AI PROTOTYPING</div>
+      <h2 class="project-name">Live AI<br>MVP Builder</h2>
+      <p class="project-tagline">Client speaks instructions during a meeting. Voice converts to text. AI writes HTML/CSS live. The screen updates in real time. The product takes shape as you talk.</p>
+    </div>
+    <div class="project-badge">
+      <div class="badge badge-main">🎯 Sales Closer</div>
+    </div>
+  </div>
+
+  <!-- Flow diagram -->
+  <div class="flow reveal reveal-delay-1">
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🎙</div>
+        <div class="flow-box-label">VOICE INPUT</div>
+        <div class="flow-box-sub">Client speaks</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">✍</div>
+        <div class="flow-box-label">DEEPGRAM</div>
+        <div class="flow-box-sub">STT &lt;300ms</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🤖</div>
+        <div class="flow-box-label">AI AGENT</div>
+        <div class="flow-box-sub">Edits HTML/CSS</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">🖥</div>
+        <div class="flow-box-label">LIVE PREVIEW</div>
+        <div class="flow-box-sub">Instant refresh</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 28 10" fill="none"><path d="M0 5h24M20 1l4 4-4 4" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="flow-node">
+      <div class="flow-box">
+        <div class="flow-box-icon">📦</div>
+        <div class="flow-box-label">EXPORT</div>
+        <div class="flow-box-sub">HTML / Figma</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wow moment -->
+  <div class="wow-block reveal reveal-delay-2">
+    <div class="wow-label">⚡ The wow moment</div>
+    <div class="wow-text">"During the discovery call, the client says 'can we put a pricing table below the hero?' — and it appears on screen in 8 seconds. Client sees their product come alive in the meeting. They sign before the call ends."</div>
+  </div>
+
+  <div class="project-grid reveal reveal-delay-3">
+    <div class="card">
+      <div class="card-label">How It Works</div>
+      <div class="card-body">
+        A split-screen interface: left side is a live voice transcript feed, right side is the rendered preview. Deepgram streams audio in real time. Each instruction is appended to a running context of the current HTML state and sent to the LLM, which returns a targeted diff — not the full file. The renderer applies the diff and refreshes the iframe. No full-page reload. The result feels instant.
+      </div>
+    </div>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot" style="background:#ff5f57"></div>
+        <div class="terminal-dot" style="background:#febc2e"></div>
+        <div class="terminal-dot" style="background:#28c840"></div>
+        <div class="terminal-title">LIVE SESSION TRANSCRIPT</div>
+      </div>
+      <div class="terminal-body">
+        <div class="terminal-line"><span class="terminal-comment"># Voice → Text (Deepgram)</span></div>
+        <div class="terminal-line"><span class="terminal-warn">🎙 "Add a navbar with logo on the left"</span></div>
+        <div class="terminal-line"><span class="terminal-success">✓ Rendered in 4.2s</span></div>
+        <div class="terminal-line">&nbsp;</div>
+        <div class="terminal-line"><span class="terminal-warn">🎙 "Make the hero background dark blue"</span></div>
+        <div class="terminal-line"><span class="terminal-success">✓ Rendered in 2.8s</span></div>
+        <div class="terminal-line">&nbsp;</div>
+        <div class="terminal-line"><span class="terminal-warn">🎙 "Add a card section for features, 3 columns"</span></div>
+        <div class="terminal-line"><span class="terminal-success">✓ Rendered in 5.1s</span></div>
+        <div class="terminal-line">&nbsp;</div>
+        <div class="terminal-line"><span class="terminal-comment"># Session saved → export ready</span></div>
+        <div class="terminal-line"><span class="terminal-output">  HTML file ✓  Version history ✓</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reveal">
+    <div class="card-label" style="margin-bottom:10px">Tech Stack</div>
+    <div class="tech-grid">
+      <span class="tech-pill">Next.js 14</span>
+      <span class="tech-pill">Deepgram Streaming STT</span>
+      <span class="tech-pill">Claude API (streaming)</span>
+      <span class="tech-pill">WebSockets</span>
+      <span class="tech-pill">Sandpack / iframe renderer</span>
+      <span class="tech-pill">HTML diff patching</span>
+      <span class="tech-pill">Session versioning (DB)</span>
+      <span class="tech-pill">Export to ZIP</span>
+    </div>
+  </div>
+
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-bottom reveal">
+    <div class="footer-copy">INTERNAL BUILD ROADMAP — CONFIDENTIAL</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="nav-dot"></div>
+      <span style="font-size:9px;color:var(--muted2);letter-spacing:2px">3 SYSTEMS</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  reveals.forEach(el => obs.observe(el));
+
+  document.querySelectorAll('.terminal-success').forEach(el => {
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.style.transition = 'opacity 0.4s';
+      el.style.opacity = '1';
+    }, Math.random() * 2000 + 500);
+  });
+</script>
+</body>
+</html>
